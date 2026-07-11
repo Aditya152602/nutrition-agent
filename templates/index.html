@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutriBot — AI Nutrition Agent | IBM Watsonx.ai</title>
+
+  <!-- ── CDN Libraries ─────────────────────────────────────────────────── -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+
+  <style>
+    /* ══════════════════════════════════════════════════════
+       DESIGN SYSTEM — "Ayurvedic Forest" Theme
+       Inspired by Indian wellness, jade greens & turmeric gold
+    ══════════════════════════════════════════════════════ */
+
+    :root {
+      /* Core palette */
+      --jade:        #0f9b6e;
+      --jade-dark:   #0a7a57;
+      --jade-light:  #10c98a;
+      --turmeric:    #e8a920;
+      --turmeric-lt: #f5c842;
+      --danger:      #f24454;
+      --info:        #38bdf8;
+
+      /* Light mode surfaces */
+      --bg:          #f0fdf8;
+      --surface:     #ffffff;
+      --card:        #ffffff;
+      --card-hover:  #f7fffe;
+      --border:      #c3ead9;
+      --border-sub:  #e0f5ed;
+      --text:        #052e16;
+      --text-muted:  #166534;
+      --text-subtle: #4b7c62;
+      --input-bg:    #f0fdf8;
+
+      /* Gradients */
+      --grad-primary: linear-gradient(135deg, #0f9b6e 0%, #059669 100%);
+      --grad-turmeric: linear-gradient(135deg, #e8a920 0%, #f59e0b 100%);
+      --grad-dark: linear-gradient(135deg, #0a2418 0%, #061a12 100%);
+      --grad-card: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(240,253,248,0.9) 100%);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 3px rgba(15, 155, 110, 0.1);
+      --shadow-md: 0 4px 16px rgba(15, 155, 110, 0.15);
+      --shadow-lg: 0 8px 32px rgba(15, 155, 110, 0.2);
+      --shadow-glow: 0 0 24px rgba(15, 155, 110, 0.25);
+
+      /* Radius */
+      --r-sm:  8px;
+      --r-md: 16px;
+      --r-lg: 24px;
+      --r-xl: 32px;
+
+      /* Transition */
+      --t: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg:          #061a12;
+      --surface:     #0a2418;
+      --card:        #0e2d1f;
+      --card-hover:  #122e22;
+      --border:      #1a4030;
+      --border-sub:  #153626;
+      --text:        #e2f5ec;
+      --text-muted:  #86efac;
+      --text-subtle: #4ade80;
+      --input-bg:    #0a2418;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+      --shadow-glow: 0 0 32px rgba(15, 155, 110, 0.3);
+      --grad-card: linear-gradient(145deg, rgba(14,45,31,0.95) 0%, rgba(10,36,24,0.9) 100%);
+    }
+
+    /* ── Base ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background var(--t), color var(--t);
+      line-height: 1.6;
+    }
+
+    h1,h2,h3,h4,h5 { font-family: 'Sora', sans-serif; }
+
+    /* ── Scrollbar ────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--jade); border-radius: 999px; }
+
+    /* ══════════════════════════════════════════════════════
+       TOPBAR
+    ══════════════════════════════════════════════════════ */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      padding: 0 24px;
+      display: flex; align-items: center; gap: 16px;
+      height: 64px;
+      box-shadow: var(--shadow-sm);
+      transition: background var(--t), border-color var(--t);
+    }
+
+    .logo-wrap {
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: var(--grad-primary);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 2px 12px rgba(15,155,110,0.4);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes logoPulse {
+      0%,100% { box-shadow: 0 2px 12px rgba(15,155,110,0.4); }
+      50%      { box-shadow: 0 2px 24px rgba(15,155,110,0.7); }
+    }
+
+    .logo-text {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700; font-size: 1.2rem;
+      background: var(--grad-primary);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-badge {
+      font-size: 0.6rem; padding: 2px 7px;
+      background: linear-gradient(135deg,#0f9b6e22,#e8a92022);
+      border: 1px solid var(--jade);
+      border-radius: 999px; color: var(--jade);
+      font-family: 'Sora', sans-serif; font-weight: 600;
+      letter-spacing: 0.5px; white-space: nowrap;
+    }
+
+    /* ── Nav tabs ─────────────────────────────────────────────────────── */
+    .nav-tabs-custom {
+      display: flex; gap: 4px;
+      list-style: none;
+      margin: 0 auto;
+      overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none;
+    }
+    .nav-tabs-custom::-webkit-scrollbar { display: none; }
+
+    .nav-tab {
+      padding: 8px 16px;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      font-size: 0.85rem; font-weight: 500;
+      color: var(--text-subtle);
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+      transition: all var(--t);
+      border: 1px solid transparent;
+      user-select: none;
+    }
+    .nav-tab:hover { color: var(--jade); background: rgba(15,155,110,0.08); }
+    .nav-tab.active {
+      color: var(--jade);
+      background: rgba(15,155,110,0.12);
+      border-color: rgba(15,155,110,0.25);
+      font-weight: 600;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .btn-icon {
+      width: 36px; height: 36px; border: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      transition: all var(--t);
+    }
+    .btn-icon:hover { background: rgba(15,155,110,0.1); color: var(--jade); border-color: var(--jade); }
+
+    /* ══════════════════════════════════════════════════════
+       MAIN LAYOUT
+    ══════════════════════════════════════════════════════ */
+    .main-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      min-height: calc(100vh - 64px);
+    }
+
+    /* ── Section show/hide ────────────────────────────────────────────── */
+    .section { display: none; }
+    .section.active {
+      display: block;
+      animation: fadeUp 0.35s var(--t) both;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CARDS
+    ══════════════════════════════════════════════════════ */
+    .card-custom {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      transition: all var(--t);
+    }
+    .card-custom:hover { box-shadow: var(--shadow-lg); }
+
+    .card-header-custom {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+    }
+    .card-icon {
+      width: 42px; height: 42px;
+      background: var(--grad-primary);
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: white; flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(15,155,110,0.35);
+    }
+    .card-icon.turmeric { background: var(--grad-turmeric); box-shadow: 0 2px 10px rgba(232,169,32,0.35); }
+    .card-icon.danger   { background: linear-gradient(135deg,#ef4444,#dc2626); }
+    .card-icon.info     { background: linear-gradient(135deg,#38bdf8,#0ea5e9); }
+
+    .card-title { font-family: 'Sora',sans-serif; font-weight: 700; font-size: 1.1rem; }
+    .card-subtitle { font-size: 0.8rem; color: var(--text-subtle); margin-top: 2px; }
+
+    /* ══════════════════════════════════════════════════════
+       ── SECTION: CHAT
+    ══════════════════════════════════════════════════════ */
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      height: calc(100vh - 130px);
+    }
+    @media (max-width: 900px) {
+      .chat-layout { grid-template-columns: 1fr; height: auto; }
+      .chat-sidebar { order: 2; }
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────── */
+    .chat-sidebar {
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .profile-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .profile-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--grad-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: white; margin: 0 auto 12px;
+      box-shadow: 0 2px 12px rgba(15,155,110,0.4);
+    }
+
+    .profile-select {
+      width: 100%;
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); color: var(--text);
+      padding: 8px 12px; font-size: 0.85rem;
+      cursor: pointer; outline: none;
+      transition: border-color var(--t);
+    }
+    .profile-select:focus { border-color: var(--jade); }
+    .profile-select option { background: var(--surface); }
+
+    .quick-tips-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+      box-shadow: var(--shadow-md);
+    }
+    .tip-item {
+      padding: 10px 12px; border-radius: var(--r-sm);
+      background: rgba(15,155,110,0.06);
+      border: 1px solid var(--border-sub);
+      margin-bottom: 8px; font-size: 0.8rem; line-height: 1.5;
+      color: var(--text-muted);
+      transition: all var(--t);
+      cursor: default;
+    }
+    .tip-item:hover { background: rgba(15,155,110,0.12); border-color: var(--jade); }
+    .tip-badge { font-size: 0.65rem; padding: 1px 6px; border-radius: 999px;
+      background: rgba(15,155,110,0.15); color: var(--jade);
+      display: inline-block; margin-bottom: 4px; font-weight: 600;
+    }
+
+    /* ── Chat main ────────────────────────────────────────────────────── */
+    .chat-main {
+      display: flex; flex-direction: column;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      background: linear-gradient(90deg, rgba(15,155,110,0.08) 0%, transparent 100%);
+    }
+    .chat-bot-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--grad-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: white; flex-shrink: 0;
+      animation: avatarGlow 3s ease-in-out infinite;
+    }
+    @keyframes avatarGlow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(15,155,110,0.4); }
+      50%      { box-shadow: 0 0 0 8px rgba(15,155,110,0); }
+    }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto;
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 16px;
+      min-height: 300px;
+    }
+
+    /* Message bubbles */
+    .msg-row {
+      display: flex; gap: 10px; align-items: flex-end;
+      animation: msgSlide 0.3s ease both;
+    }
+    @keyframes msgSlide {
+      from { opacity:0; transform:translateY(12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .msg-row.user { flex-direction: row-reverse; }
+
+    .msg-avatar-sm {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .msg-avatar-sm.bot { background: var(--grad-primary); color: white; box-shadow: 0 2px 8px rgba(15,155,110,0.3); }
+    .msg-avatar-sm.user-av { background: var(--grad-turmeric); color: white; }
+
+    .msg-bubble {
+      max-width: 78%;
+      padding: 12px 16px;
+      border-radius: var(--r-md);
+      font-size: 0.875rem; line-height: 1.65;
+      position: relative;
+    }
+    .msg-bubble.bot {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+      color: var(--text);
+    }
+    .msg-bubble.user {
+      background: var(--grad-primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 10px rgba(15,155,110,0.35);
+    }
+    .msg-bubble.bot h1,.msg-bubble.bot h2,.msg-bubble.bot h3 { font-size:1em; font-family:'Sora',sans-serif; font-weight:700; margin: 8px 0 4px; }
+    .msg-bubble.bot ul,.msg-bubble.bot ol { padding-left: 20px; margin: 6px 0; }
+    .msg-bubble.bot li { margin: 3px 0; }
+    .msg-bubble.bot strong { color: var(--jade); }
+    .msg-bubble.bot hr { border-color: var(--border); margin: 10px 0; }
+    .msg-bubble.bot code { background: rgba(15,155,110,0.12); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+
+    .msg-time { font-size: 0.68rem; color: var(--text-subtle); margin-top: 4px; text-align: right; }
+    .msg-row.user .msg-time { text-align: right; }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: flex; gap: 5px; align-items: center;
+      padding: 12px 16px;
+    }
+    .typing-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--jade);
+      animation: typingBounce 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%,60%,100% { transform: translateY(0); opacity: 0.6; }
+      30% { transform: translateY(-8px); opacity: 1; }
+    }
+
+    /* Chat input */
+    .chat-input-area {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .chat-input-row {
+      display: flex; gap: 10px; align-items: flex-end;
+    }
+    .chat-textarea {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      color: var(--text);
+      padding: 12px 16px;
+      font-size: 0.875rem;
+      font-family: 'DM Sans', sans-serif;
+      resize: none; outline: none;
+      max-height: 120px; min-height: 46px;
+      line-height: 1.5;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .chat-textarea:focus { border-color: var(--jade); box-shadow: 0 0 0 3px rgba(15,155,110,0.12); }
+    .chat-textarea::placeholder { color: var(--text-subtle); }
+
+    .btn-send {
+      width: 46px; height: 46px; flex-shrink: 0;
+      background: var(--grad-primary);
+      border: none; border-radius: var(--r-md);
+      color: white; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(15,155,110,0.4);
+      transition: all var(--t);
+    }
+    .btn-send:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(15,155,110,0.5); }
+    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Quick suggestion chips */
+    .suggestion-chips {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .chip {
+      padding: 5px 12px; border-radius: 999px;
+      background: rgba(15,155,110,0.08);
+      border: 1px solid rgba(15,155,110,0.2);
+      color: var(--jade); font-size: 0.75rem; font-weight: 500;
+      cursor: pointer; transition: all var(--t);
+      white-space: nowrap;
+    }
+    .chip:hover { background: rgba(15,155,110,0.18); border-color: var(--jade); }
+
+    /* ══════════════════════════════════════════════════════
+       ── SECTION: DASHBOARD
+    ══════════════════════════════════════════════════════ */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; margin-bottom: 24px; }
+
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 20px;
+      display: flex; align-items: center; gap: 16px;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--t);
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+
+    .stat-val { font-family: 'Sora',sans-serif; font-size: 1.6rem; font-weight: 700; line-height: 1; }
+    .stat-lbl { font-size: 0.78rem; color: var(--text-subtle); margin-top: 3px; }
+    .stat-change { font-size: 0.72rem; font-weight: 600; margin-top: 4px; }
+    .stat-change.up { color: #22c55e; }
+    .stat-change.down { color: #f24454; }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-container { position: relative; height: 240px; }
+
+    /* Nutrient progress bars */
+    .nutrient-bar { margin-bottom: 14px; }
+    .nutrient-bar-header { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; }
+    .nutrient-bar-lbl { color: var(--text-muted); font-weight: 500; }
+    .nutrient-bar-val { color: var(--jade); font-weight: 600; }
+    .bar-track { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+    /* ══════════════════════════════════════════════════════
+       ── SECTION: MEAL PLAN
+    ══════════════════════════════════════════════════════ */
+    .meal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 16px; }
+
+    .form-group-custom { display: flex; flex-direction: column; gap: 6px; }
+    .form-label-custom { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control-custom {
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: var(--r-sm); color: var(--text);
+      padding: 10px 14px; font-size: 0.875rem;
+      outline: none; width: 100%;
+      transition: border-color var(--t), box-shadow var(--t);
+      font-family: 'DM Sans', sans-serif;
+    }
+    .form-control-custom:focus { border-color: var(--jade); box-shadow: 0 0 0 3px rgba(15,155,110,0.12); }
+    .form-control-custom option { background: var(--surface); }
+
+    .btn-primary-custom {
+      background: var(--grad-primary); border: none;
+      color: white; padding: 12px 28px;
+      border-radius: var(--r-md); font-size: 0.9rem;
+      font-weight: 600; font-family: 'Sora',sans-serif;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+      box-shadow: 0 2px 10px rgba(15,155,110,0.35);
+      transition: all var(--t);
+    }
+    .btn-primary-custom:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 18px rgba(15,155,110,0.5); }
+    .btn-primary-custom:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-secondary-custom {
+      background: transparent; border: 1.5px solid var(--jade);
+      color: var(--jade); padding: 10px 22px;
+      border-radius: var(--r-md); font-size: 0.875rem;
+      font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+      transition: all var(--t);
+    }
+    .btn-secondary-custom:hover { background: rgba(15,155,110,0.08); }
+
+    .meal-output {
+      margin-top: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 24px;
+      font-size: 0.875rem; line-height: 1.75;
+      display: none;
+    }
+    .meal-output.visible { display: block; animation: fadeUp 0.4s ease both; }
+    .meal-output h1,.meal-output h2,.meal-output h3 { font-family:'Sora',sans-serif; font-weight:700; color:var(--jade); margin:14px 0 6px; font-size:1em; }
+    .meal-output strong { color: var(--turmeric); }
+    .meal-output ul,.meal-output ol { padding-left:20px; margin:6px 0; }
+    .meal-output li { margin: 4px 0; }
+    .meal-output hr { border-color: var(--border); margin: 12px 0; }
+
+    /* Day tabs */
+    .day-tabs { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; }
+    .day-tab-btn {
+      padding: 7px 16px; border-radius: 999px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text-subtle); font-size: 0.8rem;
+      font-weight: 600; cursor: pointer; white-space: nowrap;
+      transition: all var(--t);
+    }
+    .day-tab-btn:hover { border-color: var(--jade); color: var(--jade); }
+    .day-tab-btn.active { background: var(--grad-primary); color: white; border-color: transparent; }
+
+    /* ══════════════════════════════════════════════════════
+       ── SECTION: BMI CALCULATOR
+    ══════════════════════════════════════════════════════ */
+    .bmi-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 768px) { .bmi-layout { grid-template-columns: 1fr; } }
+
+    /* BMI Gauge — SVG half-circle */
+    .bmi-gauge-wrap { text-align: center; padding: 20px 0; }
+    .gauge-svg { width: 220px; height: 120px; }
+    .gauge-track { fill: none; stroke: var(--border); stroke-width: 16; stroke-linecap: round; }
+    .gauge-fill { fill: none; stroke-width: 16; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.5s ease; }
+    .gauge-value-text { font-family: 'Sora',sans-serif; font-size: 2rem; font-weight: 800; fill: var(--text); }
+    .gauge-label-text { font-size: 0.7rem; fill: var(--text-subtle); font-family: 'DM Sans',sans-serif; }
+
+    /* Colored zones */
+    .zone-indicator {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-radius: var(--r-sm); margin-bottom: 8px;
+      font-size: 0.82rem; border: 1px solid transparent;
+    }
+    .zone-indicator.active { font-weight: 700; border-color: currentColor; }
+    .zone-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Calorie table */
+    .calorie-table { width: 100%; border-collapse: collapse; }
+    .calorie-table th,.calorie-table td { padding: 10px 14px; font-size: 0.8rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .calorie-table th { color: var(--text-subtle); font-weight: 600; font-family: 'Sora',sans-serif; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .calorie-table td:last-child { text-align: right; font-weight: 600; color: var(--jade); font-family: 'Sora',sans-serif; }
+
+    /* Sliders */
+    .slider-group { margin-bottom: 20px; }
+    .slider-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.82rem; }
+    .slider-val { font-weight: 700; color: var(--jade); font-family: 'Sora',sans-serif; }
+    input[type=range] {
+      width: 100%; -webkit-appearance: none; height: 6px;
+      border-radius: 999px; background: var(--border); outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%; background: var(--jade);
+      box-shadow: 0 0 0 3px rgba(15,155,110,0.25), 0 2px 6px rgba(0,0,0,0.2);
+      cursor: pointer; transition: transform var(--t);
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+    /* ══════════════════════════════════════════════════════
+       ── SECTION: FAMILY
+    ══════════════════════════════════════════════════════ */
+    .family-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px,1fr)); gap: 16px; }
+
+    .member-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--t);
+      position: relative; overflow: hidden;
+    }
+    .member-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .member-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: var(--grad-primary);
+    }
+
+    .member-avatar-ring {
+      width: 56px; height: 56px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin: 0 auto 12px;
+      border: 3px solid var(--jade); box-shadow: 0 0 0 4px rgba(15,155,110,0.12);
+    }
+
+    .member-name { font-family: 'Sora',sans-serif; font-weight: 700; font-size: 1rem; text-align: center; }
+    .member-role { font-size: 0.75rem; color: var(--text-subtle); text-align: center; margin-bottom: 12px; }
+
+    .member-stats { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .member-tag {
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 0.7rem; font-weight: 600;
+      background: rgba(15,155,110,0.1); border: 1px solid rgba(15,155,110,0.2);
+      color: var(--jade);
+    }
+    .member-tag.turmeric { background: rgba(232,169,32,0.1); border-color: rgba(232,169,32,0.2); color: var(--turmeric); }
+
+    .member-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-member { flex: 1; padding: 8px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 500; transition: all var(--t); }
+    .btn-member:hover { border-color: var(--jade); color: var(--jade); background: rgba(15,155,110,0.06); }
+    .btn-member.danger:hover { border-color: var(--danger); color: var(--danger); background: rgba(242,68,84,0.06); }
+
+    /* Add member form */
+    .add-member-form {
+      background: var(--card); border: 2px dashed var(--border);
+      border-radius: var(--r-lg); padding: 24px;
+      transition: all var(--t);
+    }
+    .add-member-form:hover { border-color: var(--jade); }
+
+    /* ══════════════════════════════════════════════════════
+       ── SECTION: NUTRITION ANALYZER
+    ══════════════════════════════════════════════════════ */
+    .food-input-area {
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 16px;
+      width: 100%; color: var(--text); font-size: 0.875rem;
+      font-family: 'DM Sans',sans-serif; resize: vertical; min-height: 100px;
+      outline: none; transition: border-color var(--t);
+    }
+    .food-input-area:focus { border-color: var(--jade); }
+
+    /* ══════════════════════════════════════════════════════
+       LOADING SPINNER
+    ══════════════════════════════════════════════════════ */
+    .loading-spinner {
+      display: inline-block; width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══════════════════════════════════════════════════════
+       TOASTS
+    ══════════════════════════════════════════════════════ */
+    .toast-container {
+      position: fixed; top: 80px; right: 20px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+    }
+    .toast-item {
+      padding: 12px 18px; border-radius: var(--r-md);
+      font-size: 0.82rem; font-weight: 500; max-width: 320px;
+      box-shadow: var(--shadow-lg);
+      animation: toastIn 0.3s ease both;
+      pointer-events: all;
+    }
+    .toast-item.success { background: #16a34a; color: white; }
+    .toast-item.error   { background: #dc2626; color: white; }
+    .toast-item.info    { background: var(--jade); color: white; }
+    .toast-item.out { animation: toastOut 0.3s ease both; }
+    @keyframes toastIn  { from { opacity:0; transform: translateX(20px); } }
+    @keyframes toastOut { to   { opacity:0; transform: translateX(20px); } }
+
+    /* ══════════════════════════════════════════════════════
+       MISCELLANEOUS
+    ══════════════════════════════════════════════════════ */
+    .section-title {
+      font-family: 'Sora',sans-serif; font-size: 1.4rem; font-weight: 800;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .section-subtitle { font-size: 0.85rem; color: var(--text-subtle); margin-bottom: 20px; }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+    .badge-custom {
+      padding: 3px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;
+      background: rgba(15,155,110,0.12); color: var(--jade);
+      border: 1px solid rgba(15,155,110,0.2);
+    }
+    .badge-turmeric { background: rgba(232,169,32,0.12); color: var(--turmeric); border-color: rgba(232,169,32,0.2); }
+
+    .ibm-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.68rem; padding: 2px 8px; border-radius: 4px;
+      background: rgba(30,80,200,0.08); border: 1px solid rgba(30,80,200,0.18);
+      color: #3b5bdb; font-weight: 600; letter-spacing: 0.3px;
+    }
+
+    /* Empty states */
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      color: var(--text-subtle); font-size: 0.9rem;
+    }
+    .empty-state i { font-size: 2.5rem; color: var(--border); margin-bottom: 12px; display: block; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .main-content { padding: 16px 12px; }
+      .topbar { padding: 0 12px; }
+      .logo-badge { display: none; }
+      .msg-bubble { max-width: 90%; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     TOPBAR
+══════════════════════════════════════════════════════ -->
+<nav class="topbar">
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <div class="logo-icon">🌿</div>
+    <div>
+      <div class="logo-text">NutriBot</div>
+    </div>
+    <span class="logo-badge">IBM Watsonx.ai</span>
+  </div>
+
+  <!-- Nav tabs -->
+  <ul class="nav-tabs-custom">
+    <li class="nav-tab active" onclick="switchTab('chat')" id="tab-chat">
+      <i class="fas fa-comments"></i> Chat
+    </li>
+    <li class="nav-tab" onclick="switchTab('dashboard')" id="tab-dashboard">
+      <i class="fas fa-chart-pie"></i> Dashboard
+    </li>
+    <li class="nav-tab" onclick="switchTab('mealplan')" id="tab-mealplan">
+      <i class="fas fa-utensils"></i> Meal Plan
+    </li>
+    <li class="nav-tab" onclick="switchTab('bmi')" id="tab-bmi">
+      <i class="fas fa-weight-scale"></i> BMI Check
+    </li>
+    <li class="nav-tab" onclick="switchTab('family')" id="tab-family">
+      <i class="fas fa-users"></i> Family
+    </li>
+    <li class="nav-tab" onclick="switchTab('analyzer')" id="tab-analyzer">
+      <i class="fas fa-microscope"></i> Analyzer
+    </li>
+  </ul>
+
+  <!-- Right controls -->
+  <div class="topbar-right">
+    <div class="status-dot" title="Agent Online" id="statusDot"></div>
+    <button class="btn-icon" onclick="toggleTheme()" title="Toggle Dark/Light Mode" id="themeBtn">
+      <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+    <button class="btn-icon" onclick="clearChat()" title="Clear Chat" id="clearChatBtn">
+      <i class="fas fa-trash-alt"></i>
+    </button>
+  </div>
+</nav>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════════ -->
+<div class="main-content">
+
+  <!-- ─────────────────────────────────────────────────
+       SECTION: CHAT
+  ───────────────────────────────────────────────── -->
+  <div class="section active" id="section-chat">
+    <div class="chat-layout">
+
+      <!-- Sidebar -->
+      <div class="chat-sidebar">
+
+        <!-- Active Profile Card -->
+        <div class="profile-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="profile-avatar" id="sidebarAvatar">👤</div>
+            <div>
+              <div style="font-weight:700;font-size:0.95rem;" id="sidebarName">No profile selected</div>
+              <div style="font-size:0.72rem;color:var(--text-subtle);" id="sidebarGoal">Select a family profile below</div>
+            </div>
+          </div>
+
+          <div style="font-size:0.75rem;color:var(--text-subtle);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+            Active Profile
+          </div>
+          <select class="profile-select" id="profileSelector" onchange="onProfileChange()">
+            <option value="">— General (No Profile) —</option>
+          </select>
+
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-size:0.72rem;color:var(--text-subtle);">AI Model</div>
+              <span class="ibm-tag"><i class="fas fa-circle" style="font-size:0.5rem;color:#22c55e;"></i> Granite Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="quick-tips-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:0.9rem;">🌿 Daily Tips</div>
+            <button onclick="loadTips()" style="background:none;border:none;color:var(--jade);font-size:0.75rem;cursor:pointer;font-weight:600;">
+              <i class="fas fa-refresh"></i> Refresh
+            </button>
+          </div>
+          <div id="tipsList">
+            <div class="empty-state" style="padding:20px 0;">
+              <i class="fas fa-seedling" style="font-size:1.5rem;"></i>
+              <div style="font-size:0.8rem;">Loading tips...</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /sidebar -->
+
+      <!-- Chat Main -->
+      <div class="chat-main">
+
+        <!-- Chat header -->
+        <div class="chat-header">
+          <div class="chat-bot-avatar">🌿</div>
+          <div>
+            <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:0.95rem;">NutriBot</div>
+            <div style="font-size:0.72rem;color:var(--text-subtle);">AI Nutrition Expert • IBM Watsonx.ai (Granite)</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <span class="badge-custom">Active</span>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <!-- Input area -->
+        <div class="chat-input-area">
+          <!-- Quick suggestion chips -->
+          <div class="suggestion-chips" id="suggestionChips">
+            <span class="chip" onclick="useSuggestion('Create a 7-day vegetarian meal plan for weight loss')">🥗 7-Day Meal Plan</span>
+            <span class="chip" onclick="useSuggestion('What are high protein Indian vegetarian foods?')">💪 High Protein Foods</span>
+            <span class="chip" onclick="useSuggestion('Best foods for diabetes management in Indian diet')">🩺 Diabetes Diet</span>
+            <span class="chip" onclick="useSuggestion('How many calories in a typical Indian meal?')">🔥 Calorie Count</span>
+            <span class="chip" onclick="useSuggestion('What are the benefits of turmeric milk (haldi doodh)?')">🌿 Superfoods</span>
+          </div>
+
+          <div class="chat-input-row">
+            <textarea
+              class="chat-textarea"
+              id="chatInput"
+              placeholder="Ask about nutrition, meal plans, Indian foods, health tips..."
+              rows="1"
+              onkeydown="handleChatKey(event)"
+              oninput="autoResizeTextarea(this)"
+            ></textarea>
+            <button class="btn-send" id="sendBtn" onclick="sendMessage()" title="Send (Enter)">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+          <div style="text-align:center;font-size:0.68rem;color:var(--text-subtle);margin-top:8px;">
+            <i class="fas fa-shield-halved"></i> AI advice only — always consult a healthcare professional for medical decisions
+          </div>
+        </div>
+
+      </div><!-- /chat-main -->
+    </div><!-- /chat-layout -->
+  </div><!-- /section-chat -->
+
+
+  <!-- ─────────────────────────────────────────────────
+       SECTION: DASHBOARD
+  ───────────────────────────────────────────────── -->
+  <div class="section" id="section-dashboard">
+    <div class="section-title">📊 Nutrition Dashboard</div>
+    <div class="section-subtitle">Your daily nutrition overview and weekly trends</div>
+
+    <!-- Stats cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#ef444433,#ef444411);">🔥</div>
+        <div>
+          <div class="stat-val" style="color:#ef4444;">1,842</div>
+          <div class="stat-lbl">Calories Today</div>
+          <div class="stat-change up">↑ 3% vs yesterday</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#3b82f633,#3b82f611);">💪</div>
+        <div>
+          <div class="stat-val" style="color:#3b82f6;">68g</div>
+          <div class="stat-lbl">Protein Intake</div>
+          <div class="stat-change up">↑ On Track</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#0f9b6e33,#0f9b6e11);">💧</div>
+        <div>
+          <div class="stat-val" style="color:var(--jade);">1.8L</div>
+          <div class="stat-lbl">Water Intake</div>
+          <div class="stat-change down">↓ Need 700ml more</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#e8a92033,#e8a92011);">⚖️</div>
+        <div>
+          <div class="stat-val" style="color:var(--turmeric);">22.4</div>
+          <div class="stat-lbl">BMI</div>
+          <div class="stat-change up">✅ Normal Range</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="card-custom">
+        <div class="card-header-custom">
+          <div class="card-icon">📈</div>
+          <div>
+            <div class="card-title">Weekly Calories</div>
+            <div class="card-subtitle">kcal intake per day</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="weeklyCalorieChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card-custom">
+        <div class="card-header-custom">
+          <div class="card-icon turmeric">🥧</div>
+          <div>
+            <div class="card-title">Macronutrients</div>
+            <div class="card-subtitle">Today's distribution</div>
+          </div>
+        </div>
+        <div class="chart-container" style="height:180px;">
+          <canvas id="macroChart"></canvas>
+        </div>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:12px;font-size:0.78rem;">
+          <span><span style="color:#ef4444;">●</span> Carbs 55%</span>
+          <span><span style="color:#3b82f6;">●</span> Protein 20%</span>
+          <span><span style="color:#f59e0b;">●</span> Fat 25%</span>
+        </div>
+      </div>
+
+      <!-- Nutrient progress -->
+      <div class="card-custom">
+        <div class="card-header-custom">
+          <div class="card-icon info">🧬</div>
+          <div>
+            <div class="card-title">Nutrient Tracker</div>
+            <div class="card-subtitle">Daily % of target</div>
+          </div>
+        </div>
+        <div class="nutrient-bar">
+          <div class="nutrient-bar-header"><span class="nutrient-bar-lbl">🥩 Protein</span><span class="nutrient-bar-val">68g / 80g</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--grad-primary);"></div></div>
+        </div>
+        <div class="nutrient-bar">
+          <div class="nutrient-bar-header"><span class="nutrient-bar-lbl">🌾 Fiber</span><span class="nutrient-bar-val">22g / 30g</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:73%;background:linear-gradient(90deg,#e8a920,#f59e0b);"></div></div>
+        </div>
+        <div class="nutrient-bar">
+          <div class="nutrient-bar-header"><span class="nutrient-bar-lbl">🦴 Calcium</span><span class="nutrient-bar-val">680mg / 1000mg</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:68%;background:linear-gradient(90deg,#38bdf8,#0ea5e9);"></div></div>
+        </div>
+        <div class="nutrient-bar">
+          <div class="nutrient-bar-header"><span class="nutrient-bar-lbl">🩸 Iron</span><span class="nutrient-bar-val">14mg / 18mg</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:78%;background:linear-gradient(90deg,#ef4444,#dc2626);"></div></div>
+        </div>
+        <div class="nutrient-bar">
+          <div class="nutrient-bar-header"><span class="nutrient-bar-lbl">☀️ Vitamin D</span><span class="nutrient-bar-val">8µg / 15µg</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:53%;background:linear-gradient(90deg,#a855f7,#7c3aed);"></div></div>
+        </div>
+        <div class="nutrient-bar">
+          <div class="nutrient-bar-header"><span class="nutrient-bar-lbl">💧 Water</span><span class="nutrient-bar-val">1.8L / 2.5L</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:72%;background:linear-gradient(90deg,#06b6d4,#0891b2);"></div></div>
+        </div>
+      </div>
+
+      <!-- Today's meals -->
+      <div class="card-custom">
+        <div class="card-header-custom">
+          <div class="card-icon" style="background:linear-gradient(135deg,#a855f7,#7c3aed);">🍱</div>
+          <div>
+            <div class="card-title">Today's Meals</div>
+            <div class="card-subtitle">Sample — connect your profile for real data</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(15,155,110,0.06);border-radius:var(--r-sm);border:1px solid var(--border-sub);">
+            <div>
+              <div style="font-weight:600;font-size:0.85rem;">🌅 Breakfast</div>
+              <div style="font-size:0.75rem;color:var(--text-subtle);">Oats Upma + Amla Juice</div>
+            </div>
+            <span style="font-weight:700;color:var(--jade);font-size:0.85rem;">~320 kcal</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(15,155,110,0.06);border-radius:var(--r-sm);border:1px solid var(--border-sub);">
+            <div>
+              <div style="font-weight:600;font-size:0.85rem;">☀️ Lunch</div>
+              <div style="font-size:0.75rem;color:var(--text-subtle);">Dal Tadka + 2 Roti + Sabzi + Curd</div>
+            </div>
+            <span style="font-weight:700;color:var(--jade);font-size:0.85rem;">~680 kcal</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(15,155,110,0.06);border-radius:var(--r-sm);border:1px solid var(--border-sub);">
+            <div>
+              <div style="font-weight:600;font-size:0.85rem;">🌙 Dinner</div>
+              <div style="font-size:0.75rem;color:var(--text-subtle);">Khichdi + Ghee + Papad</div>
+            </div>
+            <span style="font-weight:700;color:var(--jade);font-size:0.85rem;">~542 kcal</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(232,169,32,0.06);border-radius:var(--r-sm);border:1px solid rgba(232,169,32,0.15);">
+            <div>
+              <div style="font-weight:600;font-size:0.85rem;">🌰 Snacks</div>
+              <div style="font-size:0.75rem;color:var(--text-subtle);">Makhana + Chai</div>
+            </div>
+            <span style="font-weight:700;color:var(--turmeric);font-size:0.85rem;">~300 kcal</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /charts-grid -->
+  </div><!-- /section-dashboard -->
+
+
+  <!-- ─────────────────────────────────────────────────
+       SECTION: MEAL PLAN
+  ───────────────────────────────────────────────── -->
+  <div class="section" id="section-mealplan">
+    <div class="section-title">🍱 AI Meal Planner</div>
+    <div class="section-subtitle">Generate personalized Indian meal plans with Granite AI</div>
+
+    <div class="card-custom">
+      <div class="card-header-custom">
+        <div class="card-icon turmeric">⚙️</div>
+        <div>
+          <div class="card-title">Plan Configuration</div>
+          <div class="card-subtitle">Fill your details for a personalized plan</div>
+        </div>
+      </div>
+
+      <div class="meal-form-grid">
+        <div class="form-group-custom">
+          <label class="form-label-custom">Your Name</label>
+          <input type="text" class="form-control-custom" id="mpName" placeholder="e.g. Priya" />
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Age</label>
+          <input type="number" class="form-control-custom" id="mpAge" placeholder="25" min="10" max="90" />
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Gender</label>
+          <select class="form-control-custom" id="mpGender">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other / Prefer not to say</option>
+          </select>
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Weight (kg)</label>
+          <input type="number" class="form-control-custom" id="mpWeight" placeholder="60" min="30" max="200" />
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Height (cm)</label>
+          <input type="number" class="form-control-custom" id="mpHeight" placeholder="165" min="100" max="220" />
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Health Goal</label>
+          <select class="form-control-custom" id="mpGoal">
+            <option value="Healthy lifestyle & balanced nutrition">Healthy Lifestyle</option>
+            <option value="Weight loss">Weight Loss</option>
+            <option value="Weight gain and muscle building">Weight Gain</option>
+            <option value="Diabetes management">Diabetes Management</option>
+            <option value="PCOS/PCOD management">PCOS/PCOD</option>
+            <option value="Thyroid management">Thyroid Support</option>
+            <option value="Athletic performance">Sports Nutrition</option>
+            <option value="Post-pregnancy nutrition">Post-Pregnancy</option>
+          </select>
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Diet Type</label>
+          <select class="form-control-custom" id="mpDiet">
+            <option value="Pure Vegetarian">Pure Vegetarian 🥦</option>
+            <option value="Vegan">Vegan 🌱</option>
+            <option value="Non-Vegetarian">Non-Vegetarian 🍗</option>
+            <option value="Eggetarian">Eggetarian 🥚</option>
+            <option value="Jain Vegetarian">Jain Vegetarian</option>
+          </select>
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Activity Level</label>
+          <select class="form-control-custom" id="mpActivity">
+            <option value="Sedentary (desk job, little exercise)">Sedentary</option>
+            <option value="Lightly active (1-3 days/week exercise)" selected>Lightly Active</option>
+            <option value="Moderately active (3-5 days/week exercise)">Moderately Active</option>
+            <option value="Very active (6-7 days/week exercise)">Very Active</option>
+          </select>
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Calorie Target</label>
+          <input type="number" class="form-control-custom" id="mpCalories" placeholder="1800" min="1000" max="4000" />
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Food Allergies</label>
+          <input type="text" class="form-control-custom" id="mpAllergies" placeholder="e.g. Peanuts, Gluten (or None)" />
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Health Conditions</label>
+          <input type="text" class="form-control-custom" id="mpConditions" placeholder="e.g. Diabetes, Hypertension (or None)" />
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Plan Duration</label>
+          <select class="form-control-custom" id="mpDuration">
+            <option value="daily">Daily Plan</option>
+            <option value="weekly" selected>Weekly Plan (7 days)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn-primary-custom" onclick="generateMealPlan()" id="generateBtn">
+          <i class="fas fa-wand-magic-sparkles"></i> Generate AI Meal Plan
+        </button>
+        <button class="btn-secondary-custom" onclick="fillFromProfile()">
+          <i class="fas fa-user"></i> Fill from Profile
+        </button>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="meal-output" id="mealPlanOutput"></div>
+  </div><!-- /section-mealplan -->
+
+
+  <!-- ─────────────────────────────────────────────────
+       SECTION: BMI CALCULATOR
+  ───────────────────────────────────────────────── -->
+  <div class="section" id="section-bmi">
+    <div class="section-title">⚖️ BMI Calculator</div>
+    <div class="section-subtitle">South Asian / Asian thresholds applied for accurate assessment</div>
+
+    <div class="bmi-layout">
+
+      <!-- Left: Inputs + Gauge -->
+      <div>
+        <div class="card-custom">
+          <div class="card-header-custom">
+            <div class="card-icon">📏</div>
+            <div><div class="card-title">Your Measurements</div></div>
+          </div>
+
+          <!-- Sliders -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <span style="color:var(--text-muted);font-weight:600;">Weight</span>
+              <span class="slider-val"><span id="weightVal">65</span> kg</span>
+            </div>
+            <input type="range" min="30" max="180" value="65" id="weightSlider" oninput="updateBMI()">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span style="color:var(--text-muted);font-weight:600;">Height</span>
+              <span class="slider-val"><span id="heightVal">165</span> cm</span>
+            </div>
+            <input type="range" min="100" max="220" value="165" id="heightSlider" oninput="updateBMI()">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span style="color:var(--text-muted);font-weight:600;">Age</span>
+              <span class="slider-val"><span id="ageVal">25</span> years</span>
+            </div>
+            <input type="range" min="10" max="90" value="25" id="ageSlider" oninput="updateBMI()">
+          </div>
+
+          <div class="form-group-custom" style="margin-top:4px;">
+            <label class="form-label-custom">Biological Sex</label>
+            <select class="form-control-custom" id="bmiGender" onchange="updateBMI()">
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- BMI Gauge -->
+        <div class="card-custom" style="margin-top:20px;">
+          <div class="bmi-gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 220 120" xmlns="http://www.w3.org/2000/svg" id="gaugeSvg">
+              <!-- Background arc -->
+              <path class="gauge-track" d="M 20 110 A 90 90 0 0 1 200 110" />
+              <!-- Colored fill arc -->
+              <path class="gauge-fill" id="gaugeFill"
+                d="M 20 110 A 90 90 0 0 1 200 110"
+                stroke="#16a34a"
+                stroke-dasharray="283"
+                stroke-dashoffset="141" />
+              <!-- Center values -->
+              <text class="gauge-value-text" x="110" y="92" text-anchor="middle" id="gaugeBMIText">22.4</text>
+              <text class="gauge-label-text" x="110" y="108" text-anchor="middle" id="gaugeCatText">Normal Weight</text>
+              <text class="gauge-label-text" x="20" y="118" text-anchor="middle" style="font-size:0.58rem;">10</text>
+              <text class="gauge-label-text" x="200" y="118" text-anchor="middle" style="font-size:0.58rem;">40+</text>
+            </svg>
+          </div>
+
+          <!-- Zone indicators -->
+          <div class="zone-indicator" id="zoneUnder" style="color:#3b82f6;">
+            <div class="zone-dot" style="background:#3b82f6;"></div>
+            <div><strong>Underweight</strong> — BMI below 18.5</div>
+          </div>
+          <div class="zone-indicator active" id="zoneNormal" style="color:#16a34a;">
+            <div class="zone-dot" style="background:#16a34a;"></div>
+            <div><strong>Normal ✅</strong> — BMI 18.5 – 23.0 (Asian range)</div>
+          </div>
+          <div class="zone-indicator" id="zoneOver" style="color:#f59e0b;">
+            <div class="zone-dot" style="background:#f59e0b;"></div>
+            <div><strong>Overweight</strong> — BMI 23.0 – 27.5</div>
+          </div>
+          <div class="zone-indicator" id="zoneObese" style="color:#ef4444;">
+            <div class="zone-dot" style="background:#ef4444;"></div>
+            <div><strong>Obese</strong> — BMI above 27.5</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Results + Calorie Table -->
+      <div>
+        <div class="card-custom">
+          <div class="card-header-custom">
+            <div class="card-icon" id="bmiResultIcon" style="background:linear-gradient(135deg,#16a34a,#15803d);">✅</div>
+            <div>
+              <div class="card-title" id="bmiResultCategory">Normal Weight</div>
+              <div class="card-subtitle" id="bmiResultRisk">Low Risk — Healthy range</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div style="padding:14px;background:rgba(15,155,110,0.06);border-radius:var(--r-sm);border:1px solid var(--border-sub);text-align:center;">
+              <div style="font-size:1.8rem;font-family:'Sora',sans-serif;font-weight:800;color:var(--jade);" id="bmiDisplayVal">22.4</div>
+              <div style="font-size:0.72rem;color:var(--text-subtle);">Your BMI</div>
+            </div>
+            <div style="padding:14px;background:rgba(232,169,32,0.06);border-radius:var(--r-sm);border:1px solid rgba(232,169,32,0.15);text-align:center;">
+              <div style="font-size:1.1rem;font-family:'Sora',sans-serif;font-weight:700;color:var(--turmeric);" id="bmiIdealRange">48–60 kg</div>
+              <div style="font-size:0.72rem;color:var(--text-subtle);">Ideal Weight Range</div>
+            </div>
+          </div>
+
+          <div style="padding:14px;background:rgba(15,155,110,0.06);border-radius:var(--r-sm);border:1px solid var(--border-sub);margin-bottom:16px;font-size:0.82rem;line-height:1.6;" id="bmiAdviceText">
+            <i class="fas fa-lightbulb" style="color:var(--turmeric);"></i>
+            Your BMI is in the healthy range. Maintain your current habits with balanced nutrition.
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Calorie needs table -->
+          <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:0.9rem;margin-bottom:12px;">
+            🔥 Daily Calorie Needs (BMR: <span id="bmrVal">—</span> kcal)
+          </div>
+          <table class="calorie-table">
+            <thead>
+              <tr><th>Activity Level</th><th>Example</th><th>kcal/day</th></tr>
+            </thead>
+            <tbody id="calorieTableBody">
+              <tr><td colspan="3" style="text-align:center;color:var(--text-subtle);padding:20px;">Adjust sliders to calculate</td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:16px;">
+            <button class="btn-primary-custom w-100" onclick="chatFromBMI()">
+              <i class="fas fa-comments"></i> Get AI Diet Plan for This BMI
+            </button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /bmi-layout -->
+  </div><!-- /section-bmi -->
+
+
+  <!-- ─────────────────────────────────────────────────
+       SECTION: FAMILY PROFILES
+  ───────────────────────────────────────────────── -->
+  <div class="section" id="section-family">
+    <div class="section-title">👨‍👩‍👧 Family Profiles</div>
+    <div class="section-subtitle">Manage individual profiles for personalized nutrition plans</div>
+
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;">
+
+      <!-- Members grid -->
+      <div>
+        <div class="family-grid" id="familyGrid">
+          <div class="empty-state" style="grid-column:1/-1;padding:40px;">
+            <i class="fas fa-users"></i>
+            <div style="margin-top:8px;">No family members yet</div>
+            <div style="font-size:0.75rem;margin-top:4px;">Add your first member using the form →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add member form -->
+      <div class="add-member-form">
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:2rem;margin-bottom:8px;">➕</div>
+          <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:1rem;">Add Family Member</div>
+          <div style="font-size:0.75rem;color:var(--text-subtle);margin-top:4px;">Each member gets personalized AI plans</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="form-group-custom">
+            <label class="form-label-custom">Name *</label>
+            <input type="text" class="form-control-custom" id="fmName" placeholder="e.g. Mama, Papa, Dadi..." />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group-custom">
+              <label class="form-label-custom">Age</label>
+              <input type="number" class="form-control-custom" id="fmAge" placeholder="35" />
+            </div>
+            <div class="form-group-custom">
+              <label class="form-label-custom">Gender</label>
+              <select class="form-control-custom" id="fmGender">
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group-custom">
+              <label class="form-label-custom">Weight (kg)</label>
+              <input type="number" class="form-control-custom" id="fmWeight" placeholder="65" />
+            </div>
+            <div class="form-group-custom">
+              <label class="form-label-custom">Height (cm)</label>
+              <input type="number" class="form-control-custom" id="fmHeight" placeholder="165" />
+            </div>
+          </div>
+          <div class="form-group-custom">
+            <label class="form-label-custom">Health Goal</label>
+            <select class="form-control-custom" id="fmGoal">
+              <option value="Healthy lifestyle">Healthy Lifestyle</option>
+              <option value="Weight loss">Weight Loss</option>
+              <option value="Weight gain">Weight Gain</option>
+              <option value="Diabetes management">Diabetes</option>
+              <option value="PCOS management">PCOS</option>
+              <option value="Senior wellness">Senior Wellness</option>
+              <option value="Child nutrition">Child Nutrition</option>
+            </select>
+          </div>
+          <div class="form-group-custom">
+            <label class="form-label-custom">Diet Type</label>
+            <select class="form-control-custom" id="fmDiet">
+              <option value="Vegetarian">Vegetarian 🥦</option>
+              <option value="Vegan">Vegan 🌱</option>
+              <option value="Non-Vegetarian">Non-Veg 🍗</option>
+              <option value="Eggetarian">Eggetarian 🥚</option>
+            </select>
+          </div>
+          <div class="form-group-custom">
+            <label class="form-label-custom">Health Conditions</label>
+            <input type="text" class="form-control-custom" id="fmConditions" placeholder="Diabetes, BP, None..." />
+          </div>
+          <div class="form-group-custom">
+            <label class="form-label-custom">Food Allergies</label>
+            <input type="text" class="form-control-custom" id="fmAllergies" placeholder="Gluten, Nuts, None..." />
+          </div>
+
+          <button class="btn-primary-custom" onclick="addFamilyMember()" style="width:100%;">
+            <i class="fas fa-plus"></i> Add to Family
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /section-family -->
+
+
+  <!-- ─────────────────────────────────────────────────
+       SECTION: NUTRITION ANALYZER
+  ───────────────────────────────────────────────── -->
+  <div class="section" id="section-analyzer">
+    <div class="section-title">🔬 Nutrition Analyzer</div>
+    <div class="section-subtitle">Enter any Indian or global meal to get a detailed AI nutritional breakdown</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+      <div class="card-custom">
+        <div class="card-header-custom">
+          <div class="card-icon">🍽️</div>
+          <div><div class="card-title">What did you eat?</div><div class="card-subtitle">Describe your meal</div></div>
+        </div>
+
+        <textarea class="food-input-area" id="foodInput" placeholder="Examples:
+• 2 rotis + 1 katori dal tadka + 1 cup sabzi + 1 small bowl curd
+• 1 plate idli sambar (3 idlis, 1 bowl sambar) with coconut chutney
+• Biryani (1 plate) + raita + salad
+• Breakfast: Upma with peanuts + 1 glass chai with sugar"></textarea>
+
+        <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
+          <button class="btn-primary-custom" onclick="analyzeNutrition()" id="analyzeBtn">
+            <i class="fas fa-flask"></i> Analyze Nutrition
+          </button>
+          <button class="btn-secondary-custom" onclick="clearAnalyzer()">
+            <i class="fas fa-eraser"></i> Clear
+          </button>
+        </div>
+
+        <!-- Quick food examples -->
+        <div style="margin-top:16px;">
+          <div style="font-size:0.75rem;color:var(--text-subtle);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Quick Examples</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="chip" onclick="setFoodExample('Thali: 2 rotis + 1 katori dal + 1 katori sabzi + rice + curd + pickle')">Full Thali</span>
+            <span class="chip" onclick="setFoodExample('South Indian breakfast: 3 idlis + sambar + coconut chutney')">Idli Sambar</span>
+            <span class="chip" onclick="setFoodExample('Poha with peanuts and vegetables (1 medium plate) + 1 cup chai with 1 tsp sugar + 2 biscuits')">Poha + Chai</span>
+            <span class="chip" onclick="setFoodExample('1 cup masala chai with 2 tsp sugar + 4 Marie biscuits')">Chai & Biscuits</span>
+            <span class="chip" onclick="setFoodExample('Rajma rice (1 bowl rajma + 1 cup rice) + salad + papad')">Rajma Rice</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-custom" id="analysisOutput" style="display:none;">
+        <div class="card-header-custom">
+          <div class="card-icon turmeric">📊</div>
+          <div><div class="card-title">Nutritional Analysis</div><div class="card-subtitle" id="analyzedFoodLabel">—</div></div>
+        </div>
+        <div id="analysisContent" style="font-size:0.875rem;line-height:1.75;"></div>
+      </div>
+
+      <!-- Placeholder -->
+      <div class="card-custom" id="analyzerPlaceholder">
+        <div class="empty-state">
+          <i class="fas fa-flask" style="font-size:2rem;color:var(--jade);opacity:0.4;"></i>
+          <div style="margin-top:12px;font-weight:600;">Analysis will appear here</div>
+          <div style="font-size:0.75rem;margin-top:6px;">Enter a meal on the left and click Analyze</div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /section-analyzer -->
+
+</div><!-- /main-content -->
+
+
+<!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════ -->
+<script>
+/* ── App State ───────────────────────────────────────────────────────────── */
+const state = {
+  theme:      localStorage.getItem('nutribot-theme') || 'dark',
+  sessionId:  localStorage.getItem('nutribot-session') || generateId(),
+  profile:    null,
+  profiles:   [],
+  charts:     {},
+};
+
+/* ── Utilities ───────────────────────────────────────────────────────────── */
+function generateId() {
+  const id = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  localStorage.setItem('nutribot-session', id);
+  return id;
+}
+
+function formatTime(date = new Date()) {
+  return date.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast-item ${type}`;
+  toast.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle'}"></i> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 350);
+  }, 3200);
+}
+
+function mdToHtml(text) {
+  return marked.parse(text, { breaks: true, gfm: true });
+}
+
+function setLoading(btnId, isLoading, loadingText = 'Generating...') {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (isLoading) {
+    btn._origHTML = btn.innerHTML;
+    btn.innerHTML = `<span class="loading-spinner"></span> ${loadingText}`;
+    btn.disabled = true;
+  } else {
+    btn.innerHTML = btn._origHTML || btn.innerHTML;
+    btn.disabled = false;
+  }
+}
+
+/* ── Theme ───────────────────────────────────────────────────────────────── */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeIcon').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+  // Update chart themes
+  Object.values(state.charts).forEach(chart => {
+    if (chart) {
+      chart.options.plugins.legend.labels.color = theme === 'dark' ? '#e2f5ec' : '#052e16';
+      chart.update();
+    }
+  });
+}
+
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('nutribot-theme', state.theme);
+  applyTheme(state.theme);
+}
+
+/* ── Tab Navigation ──────────────────────────────────────────────────────── */
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`section-${tab}`)?.classList.add('active');
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+
+  // Lazy init
+  if (tab === 'dashboard') initCharts();
+  if (tab === 'bmi')       updateBMI();
+  if (tab === 'family')    renderFamily();
+}
+
+/* ── CHAT SECTION ────────────────────────────────────────────────────────── */
+function appendMessage(role, content, timestamp = new Date()) {
+  const container = document.getElementById('chatMessages');
+  const isBot     = role === 'bot';
+
+  const row = document.createElement('div');
+  row.className = `msg-row ${isBot ? 'bot' : 'user'}`;
+  row.innerHTML = `
+    <div class="msg-avatar-sm ${isBot ? 'bot' : 'user-av'}">${isBot ? '🌿' : '👤'}</div>
+    <div>
+      <div class="msg-bubble ${isBot ? 'bot' : 'user'}">${
+        isBot ? mdToHtml(content) : escapeHtml(content)
+      }</div>
+      <div class="msg-time">${formatTime(timestamp)}</div>
+    </div>
+  `;
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+  return row;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showTyping() {
+  const container = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row bot';
+  row.id = 'typingIndicator';
+  row.innerHTML = `
+    <div class="msg-avatar-sm bot">🌿</div>
+    <div>
+      <div class="msg-bubble bot" style="padding:12px 18px;">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typingIndicator')?.remove();
+}
+
+async function sendMessage() {
+  const input   = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '<div class="loading-spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:white;"></div>';
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  appendMessage('user', message);
+  showTyping();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        session_id: state.sessionId,
+        profile:    state.profile,
+      }),
+    });
+    const data = await res.json();
+    removeTyping();
+    if (data.error) throw new Error(data.error);
+    appendMessage('bot', data.response);
+  } catch (err) {
+    removeTyping();
+    appendMessage('bot', `⚠️ **Error:** ${err.message}\n\nPlease check your IBM Watsonx.ai configuration in the \`.env\` file.`);
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+  }
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function useSuggestion(text) {
+  const input = document.getElementById('chatInput');
+  input.value = text;
+  input.focus();
+  autoResizeTextarea(input);
+}
+
+function clearChat() {
+  document.getElementById('chatMessages').innerHTML = '';
+  state.sessionId = generateId();
+  addGreeting();
+  showToast('Chat cleared', 'info');
+}
+
+function addGreeting() {
+  fetch('/api/agent-config')
+    .then(r => r.json())
+    .catch(() => ({}))
+    .then(() => {
+      const greeting = `{{ greeting | replace('\n', '\\n') | safe }}`;
+      appendMessage('bot', greeting);
+    });
+}
+
+/* ── Profile selector ────────────────────────────────────────────────────── */
+function onProfileChange() {
+  const sel = document.getElementById('profileSelector');
+  const pid = sel.value;
+  if (!pid) {
+    state.profile = null;
+    document.getElementById('sidebarName').textContent = 'No profile selected';
+    document.getElementById('sidebarGoal').textContent = 'Select a family profile below';
+    document.getElementById('sidebarAvatar').textContent = '👤';
+    return;
+  }
+  const p = state.profiles.find(x => x.id === pid);
+  if (p) {
+    state.profile = p;
+    document.getElementById('sidebarName').textContent = p.name || 'Profile';
+    document.getElementById('sidebarGoal').textContent = p.goal || 'General wellness';
+    document.getElementById('sidebarAvatar').textContent = getAvatarEmoji(p);
+    showToast(`Profile set to: ${p.name}`, 'success');
+  }
+}
+
+function getAvatarEmoji(p) {
+  if (!p) return '👤';
+  const goal = (p.goal || '').toLowerCase();
+  if (goal.includes('child'))   return '👦';
+  if (goal.includes('senior'))  return '👴';
+  if (goal.includes('sport'))   return '🏃';
+  if (goal.includes('pregnan')) return '🤰';
+  const g = (p.gender || '').toLowerCase();
+  return g === 'male' ? '👨' : '👩';
+}
+
+/* ── Quick Tips ──────────────────────────────────────────────────────────── */
+async function loadTips() {
+  const list = document.getElementById('tipsList');
+  list.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-subtle);font-size:0.8rem;"><i class="fas fa-spin fa-circle-notch"></i> Loading...</div>';
+  try {
+    const res = await fetch('/api/quick-tips');
+    const tips = await res.json();
+    list.innerHTML = tips.map(t => `
+      <div class="tip-item">
+        <span class="tip-badge">${t.cat}</span><br/>
+        ${t.tip}
+      </div>
+    `).join('');
+  } catch {
+    list.innerHTML = '<div class="tip-item">🌿 Drink 8-10 glasses of water daily for optimal health!</div>';
+  }
+}
+
+/* ── MEAL PLAN ───────────────────────────────────────────────────────────── */
+async function generateMealPlan() {
+  const profile = {
+    name:       document.getElementById('mpName').value || 'User',
+    age:        document.getElementById('mpAge').value || '25',
+    gender:     document.getElementById('mpGender').value,
+    weight:     document.getElementById('mpWeight').value || '65',
+    height:     document.getElementById('mpHeight').value || '165',
+    goal:       document.getElementById('mpGoal').value,
+    diet_type:  document.getElementById('mpDiet').value,
+    activity:   document.getElementById('mpActivity').value,
+    calories:   document.getElementById('mpCalories').value || '1800',
+    allergies:  document.getElementById('mpAllergies').value || 'None',
+    conditions: document.getElementById('mpConditions').value || 'None',
+  };
+  const duration = document.getElementById('mpDuration').value;
+
+  setLoading('generateBtn', true, 'Generating Plan with Granite AI...');
+  const output = document.getElementById('mealPlanOutput');
+  output.classList.remove('visible');
+
+  try {
+    const res  = await fetch('/api/meal-plan', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile, duration }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    output.innerHTML = mdToHtml(data.meal_plan);
+    output.classList.add('visible');
+    showToast('Meal plan generated!', 'success');
+    output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    showToast(`Error: ${err.message}`, 'error');
+  } finally {
+    setLoading('generateBtn', false);
+  }
+}
+
+function fillFromProfile() {
+  if (!state.profile) { showToast('No profile selected. Go to Family tab first!', 'info'); return; }
+  const p = state.profile;
+  document.getElementById('mpName').value      = p.name || '';
+  document.getElementById('mpAge').value       = p.age || '';
+  document.getElementById('mpWeight').value    = p.weight || '';
+  document.getElementById('mpHeight').value    = p.height || '';
+  document.getElementById('mpGoal').value      = p.goal || '';
+  document.getElementById('mpDiet').value      = p.diet_type || 'Vegetarian';
+  document.getElementById('mpConditions').value = p.conditions || '';
+  document.getElementById('mpAllergies').value = p.allergies || '';
+  showToast(`Filled from ${p.name}'s profile`, 'success');
+}
+
+/* ── BMI CALCULATOR ──────────────────────────────────────────────────────── */
+function updateBMI() {
+  const weight = parseInt(document.getElementById('weightSlider').value);
+  const height = parseInt(document.getElementById('heightSlider').value);
+  const age    = parseInt(document.getElementById('ageSlider').value);
+  const gender = document.getElementById('bmiGender').value;
+
+  document.getElementById('weightVal').textContent = weight;
+  document.getElementById('heightVal').textContent = height;
+  document.getElementById('ageVal').textContent    = age;
+
+  const hm  = height / 100;
+  const bmi = Math.round((weight / (hm * hm)) * 10) / 10;
+
+  // Update gauge
+  updateGauge(bmi);
+
+  // BMI category
+  let cat, risk, color, advice, icon;
+  if (bmi < 18.5) {
+    cat='Underweight'; risk='Moderate Risk — May indicate nutritional deficiency';
+    color='#3b82f6'; advice='Focus on calorie-dense nutritious foods — nuts, dairy, legumes, paneer.'; icon='📉';
+  } else if (bmi < 23) {
+    cat='Normal Weight'; risk='Low Risk — Healthy range for South Asians ✅';
+    color='#16a34a'; advice='Excellent! Maintain balance with dal-sabzi-roti, seasonal fruits & adequate water.'; icon='✅';
+  } else if (bmi < 27.5) {
+    cat='Overweight'; risk='Moderate Risk — South Asian threshold applied (international: 25)';
+    color='#f59e0b'; advice='Reduce refined carbs (maida, sugar), increase vegetables & daily 30-min walks.'; icon='⚠️';
+  } else {
+    cat='Obese'; risk='High Risk — Consult a doctor for personalized guidance';
+    color='#ef4444'; advice='Medical supervision recommended. Start with diet changes & gentle exercise. Small steps count.'; icon='🚨';
+  }
+
+  document.getElementById('bmiDisplayVal').textContent    = bmi;
+  document.getElementById('gaugeBMIText').textContent     = bmi;
+  document.getElementById('gaugeCatText').textContent     = cat;
+  document.getElementById('bmiResultCategory').textContent = `${icon} ${cat}`;
+  document.getElementById('bmiResultRisk').textContent    = risk;
+  document.getElementById('bmiAdviceText').innerHTML      = `<i class="fas fa-lightbulb" style="color:var(--turmeric);"></i> ${advice}`;
+  document.getElementById('bmiResultIcon').textContent    = icon;
+  document.getElementById('bmiResultIcon').style.background = `linear-gradient(135deg, ${color}, ${color}bb)`;
+
+  const idealMin = Math.round(18.5 * hm * hm * 10) / 10;
+  const idealMax = Math.round(23.0 * hm * hm * 10) / 10;
+  document.getElementById('bmiIdealRange').textContent = `${idealMin}–${idealMax} kg`;
+
+  // Zone indicators
+  ['Under','Normal','Over','Obese'].forEach(z => document.getElementById('zone'+z)?.classList.remove('active'));
+  if (bmi < 18.5) document.getElementById('zoneUnder')?.classList.add('active');
+  else if (bmi < 23) document.getElementById('zoneNormal')?.classList.add('active');
+  else if (bmi < 27.5) document.getElementById('zoneOver')?.classList.add('active');
+  else document.getElementById('zoneObese')?.classList.add('active');
+
+  // BMR
+  let bmr;
+  if (gender === 'male') bmr = 88.362 + (13.397*weight) + (4.799*height) - (5.677*age);
+  else                   bmr = 447.593 + (9.247*weight) + (3.098*height) - (4.330*age);
+  bmr = Math.round(bmr);
+
+  document.getElementById('bmrVal').textContent = bmr.toLocaleString('en-IN');
+
+  const activities = [
+    ['Sedentary', 'Desk job, minimal exercise',   Math.round(bmr*1.20)],
+    ['Lightly Active', 'Light exercise 1-3x/wk',   Math.round(bmr*1.375)],
+    ['Moderately Active', 'Exercise 3-5x/wk',       Math.round(bmr*1.55)],
+    ['Very Active', 'Hard exercise 6-7x/wk',         Math.round(bmr*1.725)],
+    ['Extremely Active', 'Athlete/physical job',     Math.round(bmr*1.90)],
+  ];
+
+  document.getElementById('calorieTableBody').innerHTML = activities.map(([level, ex, cal]) => `
+    <tr>
+      <td>${level}</td>
+      <td style="color:var(--text-subtle);font-size:0.75rem;">${ex}</td>
+      <td>${cal.toLocaleString('en-IN')}</td>
+    </tr>
+  `).join('');
+}
+
+function updateGauge(bmi) {
+  const fill = document.getElementById('gaugeFill');
+  if (!fill) return;
+  // Map BMI 10-40 to 0-100% of arc (283 = full arc)
+  const pct    = Math.min(Math.max((bmi - 10) / 30, 0), 1);
+  const offset = 283 - (pct * 283);
+  fill.style.strokeDashoffset = offset;
+  fill.style.stroke = bmi < 18.5 ? '#3b82f6' : bmi < 23 ? '#16a34a' : bmi < 27.5 ? '#f59e0b' : '#ef4444';
+}
+
+function chatFromBMI() {
+  const bmi    = document.getElementById('bmiDisplayVal').textContent;
+  const cat    = document.getElementById('bmiResultCategory').textContent;
+  const weight = document.getElementById('weightVal').textContent;
+  const height = document.getElementById('heightVal').textContent;
+  switchTab('chat');
+  setTimeout(() => {
+    useSuggestion(`My BMI is ${bmi} (${cat.replace(/[^a-zA-Z ]/g,'').trim()}). I weigh ${weight}kg and am ${height}cm tall. Please give me a personalized Indian diet plan for weight management.`);
+  }, 300);
+}
+
+/* ── FAMILY PROFILES ─────────────────────────────────────────────────────── */
+async function addFamilyMember() {
+  const name = document.getElementById('fmName').value.trim();
+  if (!name) { showToast('Please enter a name', 'error'); return; }
+
+  const member = {
+    name,
+    age:        document.getElementById('fmAge').value,
+    gender:     document.getElementById('fmGender').value,
+    weight:     document.getElementById('fmWeight').value,
+    height:     document.getElementById('fmHeight').value,
+    goal:       document.getElementById('fmGoal').value,
+    diet_type:  document.getElementById('fmDiet').value,
+    conditions: document.getElementById('fmConditions').value || 'None',
+    allergies:  document.getElementById('fmAllergies').value  || 'None',
+  };
+
+  try {
+    const res  = await fetch('/api/family-profile', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(member),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`${name} added to family!`, 'success');
+      ['fmName','fmAge','fmWeight','fmHeight','fmConditions','fmAllergies'].forEach(id => { document.getElementById(id).value=''; });
+      await loadProfiles();
+      renderFamily();
+    }
+  } catch (err) {
+    showToast('Failed to add member', 'error');
+  }
+}
+
+async function loadProfiles() {
+  try {
+    const res = await fetch('/api/family-profiles');
+    state.profiles = await res.json();
+    updateProfileSelector();
+  } catch { state.profiles = []; }
+}
+
+function updateProfileSelector() {
+  const sel = document.getElementById('profileSelector');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— General (No Profile) —</option>';
+  state.profiles.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${getAvatarEmoji(p)} ${p.name} (${p.age || '?'}y, ${p.goal || 'Wellness'})`;
+    sel.appendChild(opt);
+  });
+  if (current) sel.value = current;
+}
+
+function renderFamily() {
+  const grid = document.getElementById('familyGrid');
+  if (!state.profiles.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:40px;">
+      <i class="fas fa-users"></i>
+      <div style="margin-top:8px;">No family members yet</div>
+      <div style="font-size:0.75rem;margin-top:4px;">Add your first member using the form →</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = state.profiles.map(p => `
+    <div class="member-card">
+      <div class="member-avatar-ring" style="background:rgba(15,155,110,0.08);">
+        ${getAvatarEmoji(p)}
+      </div>
+      <div class="member-name">${p.name}</div>
+      <div class="member-role">${p.age ? p.age + ' yrs' : ''} ${p.gender ? '• ' + p.gender : ''}</div>
+      <div class="member-stats">
+        <span class="member-tag">${p.diet_type || 'Veg'}</span>
+        <span class="member-tag turmeric">${p.goal || 'Wellness'}</span>
+        ${p.weight ? `<span class="member-tag">${p.weight}kg</span>` : ''}
+      </div>
+      ${p.conditions && p.conditions !== 'None' ? `<div style="margin-top:8px;text-align:center;font-size:0.72rem;color:var(--text-subtle);">🩺 ${p.conditions}</div>` : ''}
+      <div class="member-actions">
+        <button class="btn-member" onclick="chatWithMember('${p.id}')">
+          <i class="fas fa-comments"></i> Chat
+        </button>
+        <button class="btn-member" onclick="planForMember('${p.id}')">
+          <i class="fas fa-utensils"></i> Plan
+        </button>
+        <button class="btn-member danger" onclick="deleteMember('${p.id}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function chatWithMember(id) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!p) return;
+  state.profile = p;
+  document.getElementById('profileSelector').value = id;
+  onProfileChange();
+  switchTab('chat');
+  showToast(`Chatting as ${p.name}`, 'success');
+}
+
+function planForMember(id) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!p) return;
+  state.profile = p;
+  switchTab('mealplan');
+  fillFromProfile();
+}
+
+async function deleteMember(id) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!confirm(`Remove ${p?.name || 'this member'} from family?`)) return;
+  try {
+    await fetch(`/api/family-profile/${id}`, { method: 'DELETE' });
+    if (state.profile?.id === id) { state.profile = null; document.getElementById('profileSelector').value = ''; }
+    await loadProfiles();
+    renderFamily();
+    showToast('Member removed', 'info');
+  } catch { showToast('Failed to remove member', 'error'); }
+}
+
+/* ── NUTRITION ANALYZER ──────────────────────────────────────────────────── */
+async function analyzeNutrition() {
+  const foods = document.getElementById('foodInput').value.trim();
+  if (!foods) { showToast('Please describe your meal first', 'error'); return; }
+
+  setLoading('analyzeBtn', true, 'Analyzing with Granite AI...');
+  const output = document.getElementById('analysisOutput');
+  const placeholder = document.getElementById('analyzerPlaceholder');
+
+  try {
+    const res = await fetch('/api/nutrition-analysis', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ foods }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById('analysisContent').innerHTML = mdToHtml(data.analysis);
+    document.getElementById('analyzedFoodLabel').textContent = foods.substring(0, 60) + (foods.length > 60 ? '...' : '');
+    output.style.display = 'block';
+    output.style.animation = 'none';
+    output.offsetHeight; // reflow
+    output.style.animation = 'fadeUp 0.4s ease both';
+    placeholder.style.display = 'none';
+    showToast('Nutritional analysis ready!', 'success');
+  } catch (err) {
+    showToast(`Error: ${err.message}`, 'error');
+  } finally {
+    setLoading('analyzeBtn', false);
+  }
+}
+
+function clearAnalyzer() {
+  document.getElementById('foodInput').value = '';
+  document.getElementById('analysisOutput').style.display = 'none';
+  document.getElementById('analyzerPlaceholder').style.display = 'block';
+}
+
+function setFoodExample(text) {
+  document.getElementById('foodInput').value = text;
+  document.getElementById('foodInput').focus();
+}
+
+/* ── CHARTS ──────────────────────────────────────────────────────────────── */
+function initCharts() {
+  if (state.charts.weekly) return; // already initialized
+
+  const isDark    = state.theme === 'dark';
+  const textColor = isDark ? '#e2f5ec' : '#052e16';
+  const gridColor = isDark ? 'rgba(26,64,48,0.5)' : 'rgba(195,234,217,0.5)';
+
+  // Weekly calorie chart
+  const ctxW = document.getElementById('weeklyCalorieChart')?.getContext('2d');
+  if (ctxW) {
+    state.charts.weekly = new Chart(ctxW, {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+          label: 'Calories (kcal)',
+          data: [1820, 1650, 1980, 1720, 1850, 2100, 1750],
+          backgroundColor: [
+            'rgba(15,155,110,0.7)','rgba(15,155,110,0.7)','rgba(232,169,32,0.7)',
+            'rgba(15,155,110,0.7)','rgba(15,155,110,0.7)','rgba(242,68,84,0.7)','rgba(15,155,110,0.7)'
+          ],
+          borderColor: ['#0f9b6e','#0f9b6e','#e8a920','#0f9b6e','#0f9b6e','#f24454','#0f9b6e'],
+          borderWidth: 1.5, borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 } }, beginAtZero: false, min: 1200 },
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  // Macro pie chart
+  const ctxM = document.getElementById('macroChart')?.getContext('2d');
+  if (ctxM) {
+    state.charts.macro = new Chart(ctxM, {
+      type: 'doughnut',
+      data: {
+        labels: ['Carbohydrates', 'Protein', 'Fat'],
+        datasets: [{
+          data: [55, 20, 25],
+          backgroundColor: ['rgba(239,68,68,0.8)','rgba(59,130,246,0.8)','rgba(245,158,11,0.8)'],
+          borderColor: ['#ef4444','#3b82f6','#f59e0b'],
+          borderWidth: 2, hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: { legend: { display: false } },
+      }
+    });
+  }
+}
+
+/* ── Check API Status ────────────────────────────────────────────────────── */
+async function checkApiStatus() {
+  try {
+    const res  = await fetch('/api/health');
+    const data = await res.json();
+    const dot  = document.getElementById('statusDot');
+    if (dot) {
+      dot.style.background    = data.configured ? '#22c55e' : '#f59e0b';
+      dot.style.boxShadow     = data.configured ? '0 0 6px #22c55e' : '0 0 6px #f59e0b';
+      dot.title = data.configured ? `${data.agent} — ${data.model} connected` : 'IBM API not configured — check .env';
+    }
+    if (!data.configured) {
+      showToast('⚙️ IBM Watsonx.ai not configured. See README.md', 'info');
+    }
+  } catch { /* silent fail */ }
+}
+
+/* ── INIT ────────────────────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', async () => {
+  // Apply saved theme
+  applyTheme(state.theme);
+
+  // Load greeting
+  addGreeting();
+
+  // Load tips
+  loadTips();
+
+  // Load family profiles
+  await loadProfiles();
+
+  // Check API status
+  checkApiStatus();
+
+  // Init BMI gauge
+  setTimeout(() => updateBMI(), 100);
+
+  // Chat input: Enter to send
+  document.getElementById('chatInput')?.addEventListener('keydown', handleChatKey);
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
