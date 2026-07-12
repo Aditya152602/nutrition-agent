@@ -47,9 +47,9 @@ log = logging.getLogger(__name__)
 # ══════════════════════════════════════════════════════════════════════════════
 AGENT_INSTRUCTIONS = {
 
-    # ── PERSON ─────────────────────────────────────────────────────────────
-    "person_name":    "NutriBot",
-    "person_role":    "Personal AI Nutrition Expert & Indian Wellness Coach",
+    # ── PERSONA ─────────────────────────────────────────────────────────────
+    "persona_name":    "NutriBot",
+    "persona_role":    "Personal AI Nutrition Expert & Indian Wellness Coach",
     "powered_by":      "IBM Watsonx.ai (Granite)",
     "version":         "1.0.0",
 
