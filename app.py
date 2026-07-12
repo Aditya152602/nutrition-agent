@@ -47,9 +47,9 @@ log = logging.getLogger(__name__)
 # ══════════════════════════════════════════════════════════════════════════════
 AGENT_INSTRUCTIONS = {
 
-    # ── PERSONA ─────────────────────────────────────────────────────────────
-    "persona_name":    "NutriBot",
-    "persona_role":    "Personal AI Nutrition Expert & Indian Wellness Coach",
+    # ── PERSON ─────────────────────────────────────────────────────────────
+    "person_name":    "NutriBot",
+    "person_role":    "Personal AI Nutrition Expert & Indian Wellness Coach",
     "powered_by":      "IBM Watsonx.ai (Granite)",
     "version":         "1.0.0",
 
@@ -228,14 +228,9 @@ chat_histories_store:  dict = {}
 #  🤖 IBM WATSONX.AI — GRANITE MODEL INTEGRATION
 # ══════════════════════════════════════════════════════════════════════════════
 def get_watsonx_model():
-    """
-    Initialize IBM Watsonx.ai Granite model.
-    Reads credentials from .env file (IBM_API_KEY, WATSONX_PROJECT_ID, etc.)
-    """
     try:
         from ibm_watsonx_ai import Credentials
         from ibm_watsonx_ai.foundation_models import ModelInference
-        from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
 
         api_key    = os.getenv("IBM_API_KEY")
         project_id = os.getenv("WATSONX_PROJECT_ID")
@@ -243,7 +238,7 @@ def get_watsonx_model():
         model_id   = os.getenv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct")
 
         if not api_key or not project_id:
-            raise ValueError("IBM_API_KEY or WATSONX_PROJECT_ID not set in .env file")
+            raise ValueError("Keys missing")
 
         credentials = Credentials(url=url, api_key=api_key)
 
@@ -251,23 +246,12 @@ def get_watsonx_model():
             model_id=model_id,
             credentials=credentials,
             project_id=project_id,
-            params={
-                GenParams.MAX_NEW_TOKENS:     AGENT_INSTRUCTIONS["response_format"]["max_tokens"],
-                GenParams.TEMPERATURE:        0.72,
-                GenParams.TOP_P:              0.90,
-                GenParams.TOP_K:              50,
-                GenParams.REPETITION_PENALTY: 1.10,
-            }
         )
         return model
 
-    except ImportError:
-        log.error("ibm-watsonx-ai not installed. Run: pip install ibm-watsonx-ai")
-        return None
     except Exception as e:
-        log.error(f"Watsonx initialization error: {e}")
+        log.error(f"Watsonx error: {e}")
         return None
-
 
 def build_system_prompt(user_profile: dict = None) -> str:
     """
